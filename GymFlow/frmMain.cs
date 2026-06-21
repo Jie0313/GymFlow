@@ -424,6 +424,21 @@ namespace GymFlow
                 {
                     if (lstMembers.SelectedItem == null) { MessageBox.Show("請選擇會員！"); return; }
                     string memberId = lstMembers.SelectedItem.ToString().Split('-')[0].Trim();
+
+                    // 驗證會籍是否有效
+                    string today      = DateTime.Today.ToString("yyyy-MM-dd");
+                    var paymentCheck  = DatabaseHelper.LoadTable("Payments");
+                    string expire     = paymentCheck.AsEnumerable()
+                        .Where(p => p["MemberID"].ToString() == memberId)
+                        .OrderByDescending(p => p["ExpireDate"].ToString())
+                        .Select(p => p["ExpireDate"].ToString()).FirstOrDefault();
+                    if (string.IsNullOrEmpty(expire) || string.Compare(expire, today) < 0)
+                    {
+                        string mName = lstMembers.SelectedItem.ToString().Split('-')[1].Trim();
+                        MessageBox.Show(mName + " 的會籍已過期或尚未繳費！\n請先完成繳費後再報名課程。", "無法報名", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
                     DatabaseHelper.InsertRow("Enrollments", "EnrollID", new System.Collections.Generic.Dictionary<string, string>
                     {
                         { "MemberID",   memberId },
